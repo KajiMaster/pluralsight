@@ -3,6 +3,9 @@ import iso6346
 
 class ShippingContainer():
 
+    HEIGHT_FT = 8.5
+    WIDTH_FT = 8.0
+
     next_serial = 1337
 
     @staticmethod
@@ -17,19 +20,23 @@ class ShippingContainer():
         return result
 
     @classmethod
-    def create_empty(cls, owner_code, *args, **kwargs):
-        return cls(owner_code, contents=None, *args, **kwargs)
+    def create_empty(cls, owner_code, length_ft, *args, **kwargs):
+        return cls(owner_code, length_ft, contents=None, *args, **kwargs)
 
     @classmethod
-    def create_with_items(cls, owner_code, items, *args, **kwargs):
-        return cls(owner_code, contents=list(items), *args, **kwargs)
+    def create_with_items(cls, owner_code, length_ft, items, *args, **kwargs):
+        return cls(owner_code, length_ft, contents=list(items), *args, **kwargs)
 
-    def __init__(self, owner_code, contents):
-        self.owner_code = owner_code
+    def __init__(self, owner_code, length_ft, contents):
+        self.length_ft = length_ft
         self.contents = contents
         self.bic = self._make_bic_code(
             owner_code=owner_code,
             serial=ShippingContainer._get_next_serial())
+
+    @property
+    def volume_ft3(self):
+        return ShippingContainer.HEIGHT_FT * ShippingContainer.WIDTH_FT * self.length_ft
 
 
 class RefrigeratedShippingContainer(ShippingContainer):
@@ -52,8 +59,8 @@ class RefrigeratedShippingContainer(ShippingContainer):
     def _f_to_c(fahrenheit):
         return (fahrenheit - 32) * 5/9
 
-    def __init__(self, owner_code, contents, celsius):
-        super().__init__(owner_code, contents)
+    def __init__(self, owner_code, length_ft, contents, celsius):
+        super().__init__(owner_code, length_ft, contents)
         self.celsius = celsius
 
     @property
@@ -74,3 +81,17 @@ class RefrigeratedShippingContainer(ShippingContainer):
     def fahrenheit(self, value):
         self.celsius = RefrigeratedShippingContainer._f_to_c(value)
 
+    @property
+    def volume_ft3(self):
+        return super().volume_ft3 - RefrigeratedShippingContainer.FRIDGE_VOLUME_FT3
+
+
+class HeatedRefrigeratedShippingContainer(RefrigeratedShippingContainer):
+
+    MIN_CELSIUS = -20.0
+
+    @RefrigeratedShippingContainer.celsius.setter
+    def celsius(self, value):
+        if value < HeatedRefrigeratedShippingContainer.MIN_CELSIUS:
+            raise ValueError("Temperature too cold!")
+        RefrigeratedShippingContainer.celsius.fset(self, value)
