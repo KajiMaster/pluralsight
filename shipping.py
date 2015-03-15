@@ -47,7 +47,7 @@ class RefrigeratedShippingContainer(ShippingContainer):
     MAX_CELSIUS = 4.0
 
     FRIDGE_VOLUME_FT3 = 100
-
+f
     @staticmethod
     def _make_bic_code(owner_code, serial):
         return iso6346.create(owner_code=owner_code,
